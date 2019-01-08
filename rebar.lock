@@ -5,7 +5,7 @@
  {<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
  {<<"lz4">>,
   {git,"https://github.com/lpgauth/erlang-lz4.git",
-       {ref,"faf5c9e1bb083adb49638cddecfc9069596c43f9"}},
+       {ref,"0572b0ea2aab83ec8cdd1526aaa5e7622fd6aee5"}},
   0},
  {<<"metal">>,{pkg,<<"metal">>,<<"0.1.1">>},1},
  {<<"murmur">>,
@@ -14,5 +14,5 @@
   0},
  {<<"shackle">>,
   {git,"https://github.com/lpgauth/shackle.git",
-       {ref,"1cf730d86b918df5d390dcfce7f33f49de8e2084"}},
+       {ref,"58f4adb067e677512b3a2af43c445734a4aeec64"}},
   0}].
