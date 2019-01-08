@@ -1,6 +1,6 @@
 [{<<"foil">>,
   {git,"https://github.com/lpgauth/foil.git",
-       {ref,"56440106cc70f45d53ae461e98a547b5cde63646"}},
+       {ref,"b55c30ff8b21daf89a85d1565d4b836c7f9e549b"}},
   0},
  {<<"granderl">>,{pkg,<<"granderl">>,<<"0.1.5">>},1},
  {<<"lz4">>,
