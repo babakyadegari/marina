@@ -1,0 +1,13 @@
+{application, marina, [
+  {description, "cassandra client"},
+  {vsn, "0.3.5"},
+  {registered, []},
+  {applications, [
+    kernel,
+    stdlib,
+    shackle,
+    foil
+  ]},
+  {mod, {marina_app, []}},
+  {env, []}
+]}.

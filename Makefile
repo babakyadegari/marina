@@ -1,54 +1,69 @@
-CACHEGRIND=qcachegrind
-ELVIS=./bin/elvis
-REBAR3=./bin/rebar3
+PROJECT = marina
+PROJECT_DESCRIPTION = erlang cassandra client
+PROJECT_VERSION = 1.0
 
-all: compile
+DEPS = foil lz4 murmur shackle metal
+dep_foil = git https://github.com/lpgauth/foil.git master
+dep_lz4 = git https://github.com/lpgauth/erlang-lz4.git master
+dep_murmur = git https://github.com/lpgauth/murmur.git master 
+dep_shackle = git https://github.com/lpgauth/shackle.git master
+dep_metal = git https://github.com/lpgauth/metal.git master
 
-clean:
-	@echo "Running rebar3 clean..."
-	@$(REBAR3) clean -a
+ERLC_OPTS += +debug_info
 
-compile:
-	@echo "Running rebar3 compile..."
-	@$(REBAR3) as compile compile
+TEST_ERLC_OPTS += +debug_info
 
-coveralls:
-	@echo "Running rebar3 coveralls send..."
-	@$(REBAR3) as test coveralls send
+COVER = true
 
-dialyzer:
-	@echo "Running rebar3 dialyze..."
-	@$(REBAR3) dialyzer
+$(shell [ -f erlang.mk ] || curl -s -o erlang.mk https://raw.githubusercontent.com/emqx/erlmk/master/erlang.mk)
+include erlang.mk
 
-edoc:
-	@echo "Running rebar3 edoc..."
-	@$(REBAR3) as edoc edoc
+#CUTTLEFISH_SCRIPT = _build/default/lib/cuttlefish/cuttlefish
 
-elvis:
-	@echo "Running elvis rock..."
-	@$(ELVIS) rock
+#app.config: $(CUTTLEFISH_SCRIPT) 
+#	$(verbose) $(CUTTLEFISH_SCRIPT) -l info -e etc/ -c etc/emqx_web_hook.conf -i priv/emqx_web_hook.schema -d data
 
-eunit:
-	@echo "Running rebar3 eunit..."
-	@$(REBAR3) do eunit -cv, cover -v
+$(CUTTLEFISH_SCRIPT): rebar-deps
+	@if [ ! -f cuttlefish ]; then make -C _build/default/lib/cuttlefish; fi
 
-profile:
-	@echo "Profiling..."
-	@$(REBAR3) as test compile
-	@erl -noshell \
-	     -pa _build/test/lib/*/ebin \
-	     -pa _build/test/lib/*/test \
-	     -eval 'marina_profile:fprofx()' \
-	     -eval 'init:stop()'
-	@_build/test/lib/fprofx/erlgrindx -p fprofx.analysis
-	@$(CACHEGRIND) fprofx.cgrind
+distclean::
+	@rm -rf _build cover deps logs log data
+	@rm -f rebar.lock compile_commands.json cuttlefish
 
-test: elvis xref eunit dialyzer
+rebar-deps:
+	rebar3 get-deps
 
-travis: test coveralls
+rebar-clean:
+	@rebar3 clean
 
-xref:
-	@echo "Running rebar3 xref..."
-	@$(REBAR3) xref
+rebar-compile: rebar-deps
+	rebar3 compile
 
-.PHONY: clean compile coveralls dialyzer edoc elvis eunit profile xref
+rebar-ct: app.config
+	rebar3 ct
+
+rebar-xref:
+	@rebar3 xref
+
+## Below are for version consistency check during erlang.mk and rebar3 dual mode support
+none=
+space = $(none) $(none)
+comma = ,
+quote = \"
+curly_l = "{"
+curly_r = "}"
+dep-versions = [$(foreach dep,$(DEPS) $(BUILD_DEPS),$(curly_l)$(dep),$(quote)$(word 3,$(dep_$(dep)))$(quote)$(curly_r)$(comma))[]]
+
+.PHONY: dep-vsn-check
+dep-vsn-check:
+	$(verbose) erl -noshell -eval \
+		"MkVsns = lists:sort(lists:flatten($(dep-versions))), \
+		{ok, Conf} = file:consult('rebar.config'), \
+		{_, Deps} = lists:keyfind(deps, 1, Conf), \
+		F = fun({N, V}) when is_list(V) -> {N, V}; ({N, {git, _, {branch, V}}}) -> {N, V} end, \
+		RebarVsns = lists:sort(lists:map(F, Deps)), \
+		case {RebarVsns -- MkVsns, MkVsns -- RebarVsns} of \
+		  {[], []} -> halt(0); \
+		  {Rebar, Mk} -> erlang:error({deps_version_discrepancy, [{rebar, Rebar}, {mk, Mk}]}) \
+		end."
+
